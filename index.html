@@ -54,12 +54,31 @@
   // Função de log: envia para Sheets (Apps Script) e para GA4 com user_id e parâmetro user_email
   function log(event, extra){
     // Sheets
-    fetch(LOG_ENDPOINT,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({event, ts:new Date().toISOString(), sessionId, user, email, pageUrl:location.href, reportUrl:REPORT_URL, ua:navigator.userAgent, ref:document.referrer, ...extra})
-    }).then(r=>setStatus(r.ok?'status: online':'status: erro'))
-      .catch(()=>setStatus('status: falhou'));
+    async function log(event, extra={}){
+  const payload = {
+    event,
+    ts: new Date().toISOString(),
+    sessionId,
+    user,
+    email,
+    pageUrl: location.href,
+    reportUrl: REPORT_URL,
+    ua: navigator.userAgent,
+    ref: document.referrer,
+    ...extra
+  };
+  try {
+    const res = await fetch(LOG_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+      body: JSON.stringify(payload)
+    });
+    setStatus(res.ok ? 'status: online' : 'status: erro');
+  } catch {
+    setStatus('status: falhou');
+  }
+}
+
 
     // GA4: evento com user_id + parâmetro personalizado user_email (event param) e user_properties
     gtag('event', event, {
