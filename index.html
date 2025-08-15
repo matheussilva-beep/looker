@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pilot – rastreamento com login + GA4 + parâmetro user_email</title>
+  <style>
+    body{margin:0;font:14px system-ui;background:#0b0d12;color:#e7ecff;display:flex;align-items:center;justify-content:center;height:100vh}
+    header{padding:10px 12px;border-bottom:1px solid #1b2140}
+    small{opacity:.8}
+    #s{font-size:12px;opacity:.8}
+    iframe{width:100%;height:calc(100vh - 56px);border:0}
+    .hidden{display:none}
+    .login-box{background:#12182e;padding:20px;border-radius:10px;max-width:340px;width:100%;box-sizing:border-box}
+    input{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #1b2140;background:#0b0d12;color:#fff}
+    button{width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+  </style>
+  <!-- GA4 gtag: substitua pelo seu ID de medição -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}  
+    gtag('js', new Date());
+    // Config básica; vamos setar user_id/user_properties após o login
+    gtag('config', 'G-QPLM3ZCYPR');
+  </script>
+</head>
+<body>
+  <div id="login" class="login-box">
+    <h3>Identifique-se</h3>
+    <p style="font-size:13px;opacity:.8">Informe seu nome e e-mail para acessar o relatório.</p>
+    <input type="text" id="name" placeholder="Seu nome" autocomplete="name">
+    <input type="email" id="email" placeholder="voce@empresa.com" autocomplete="email">
+    <button id="enter">Acessar relatório</button>
+  </div>
+
+  <div id="reportArea" class="hidden" style="flex:1;flex-direction:column;width:100%">
+    <header>
+      <div><b>Demo</b> · <small>GitHub Pages ➜ Looker Studio</small></div>
+      <div id="s">status: —</div>
+    </header>
+    <iframe id="r" allowfullscreen loading="lazy"></iframe>
+  </div>
+
+  <script>
+  // ======= CONFIG =======
+  const REPORT_URL   = 'https://lookerstudio.google.com/s/gqrCXzw1DFU'; // sua URL do relatório
+  const LOG_ENDPOINT = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbwHOCNXtrdWVBTLg4MmHO_Yi8iaNtiYBvY-rmzukAMm8SZn6PHoVnDSbitDOQUheVmlIw/exec'; // Apps Script (Web App)
+  // ======================
+
+  let sessionId, user, email, start;
+  const setStatus = t => document.getElementById('s').textContent = t;
+
+  // Função de log: envia para Sheets (Apps Script) e para GA4 com user_id e parâmetro user_email
+  function log(event, extra){
+    // Sheets
+    fetch(LOG_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({event, ts:new Date().toISOString(), sessionId, user, email, pageUrl:location.href, reportUrl:REPORT_URL, ua:navigator.userAgent, ref:document.referrer, ...extra})
+    }).then(r=>setStatus(r.ok?'status: online':'status: erro'))
+      .catch(()=>setStatus('status: falhou'));
+
+    // GA4: evento com user_id + parâmetro personalizado user_email (event param) e user_properties
+    gtag('event', event, {
+      session_id: sessionId,
+      user_id: email,
+      user_email: email,   // <- parâmetro de evento personalizado
+      user_name: user,
+      ...extra
+    });
+  }
+
+  document.getElementById('enter').onclick = ()=>{
+    const nameVal = document.getElementById('name').value.trim();
+    const emailVal = document.getElementById('email').value.trim();
+    if(!nameVal || !emailVal){alert('Preencha nome e e-mail para continuar');return;}
+
+    user = nameVal;
+    email = emailVal;
+    sessionId = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+    start = Date.now();
+
+    // GA4: define user_id e user_properties para relatórios por usuário
+    gtag('config', 'G-QPLM3ZCYPR', { user_id: email });
+    gtag('set', 'user_properties', { user_email: email, user_name: user });
+
+    // Libera o relatório
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('reportArea').classList.remove('hidden');
+    document.getElementById('r').src = REPORT_URL;
+
+    // Eventos principais
+    log('page_view');
+    window.addEventListener('beforeunload',()=>{
+      const durationSec = Math.round((Date.now()-start)/1000);
+      const unloadData = {event:'page_unload', sessionId, user, email, pageUrl:location.href, reportUrl:REPORT_URL, durationSec};
+      navigator.sendBeacon(LOG_ENDPOINT, new Blob([JSON.stringify(unloadData)],{type:'application/json'}));
+      gtag('event','page_unload', unloadData);
+    });
+    setInterval(()=>{
+      log('heartbeat', {aliveFor: Math.round((Date.now()-start)/1000)});
+    },15000);
+  }
+  </script>
+
+  <!-- ===================== INSTRUÇÕES GA4 =====================
+  1) Substitua G-XXXXXXXXXX pelo seu ID de medição (Admin > Data streams > Measurement ID).
+  2) Crie no GA4:
+     a) Uma **Dimensão personalizada (Event parameter)** chamada `user_email` (escopo: Event, parâmetro: user_email).
+     b) (Opcional) **User property** `user_email` e `user_name` (Admin > Custom definitions > Create custom in User-scoped properties) para análises por usuário.
+     c) Habilite e use **User-ID** (Admin > Data collection > User-ID) para relatórios por usuário logado.
+  3) Como visualizar:
+     - Em **Explore (Explorações)**, adicione **User-ID** como dimensão e filtre por um e-mail específico.
+     - Ou use a dimensão personalizada `user_email` nos relatórios/Explorações.
+  4) Na sua planilha (Sheets), você já terá as colunas `user` e `email` vindas do Apps Script; use filtros/pivot para “email = x@empresa.com” e conte sessões/eventos.
+  ============================================================= -->
+</body>
+</html>
