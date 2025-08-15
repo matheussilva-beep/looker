@@ -52,19 +52,32 @@
   const setStatus = t => document.getElementById('s').textContent = t;
 
   // Função de log: envia para Sheets (Apps Script) e para GA4 com user_id e parâmetro user_email
-  function log(event, extra){
-    // Sheets
-    async function log(event, extra={}){
-  const payload = {
-    event,
-    ts: new Date().toISOString(),
-    sessionId,
-    user,
-    email,
-    pageUrl: location.href,
-    reportUrl: REPORT_URL,
-    ua: navigator.userAgent,
-    ref: document.referrer,
+function log(event, extra = {}) {
+  fetch(LOG_ENDPOINT, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      event,
+      ts: new Date().toISOString(),
+      sessionId,
+      user,
+      email,
+      email_hash: extra.email_hash || '', // adiciona se vier
+      pageUrl: location.href,
+      reportUrl: REPORT_URL,
+      ua: navigator.userAgent,
+      ref: document.referrer,
+      ...extra
+    })
+  })
+  .then(r => setStatus(r.ok ? 'status: online' : 'status: erro'))
+  .catch(() => setStatus('status: falhou'));
+
+  gtag('event', event, {
+    session_id: sessionId,
+    user_id: extra.email_hash || '',
+    user_email: extra.email_hash || '',
+    user_name: user,
     ...extra
   };
   try {
