@@ -43,7 +43,7 @@
     </div>
   </div>
 
-  <!-- iframe oculto recebe a resposta do Apps Script (não precisamos ler) -->
+  <!-- iframe oculto para receber a resposta do Apps Script -->
   <iframe name="hidden_iframe" id="hidden_iframe" style="display:none"></iframe>
 
   <!-- form oculto para POST cross-origin sem CORS -->
@@ -51,7 +51,7 @@
 
   <script>
     // ===== CONFIG =====
-    const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbzc-Y0j89_OaMwhk_mMMtpm2AsGf7fQXxtOfFR7K63xbrc7rs32UlEAiZG-U5S7xMnS/exec'; // cole seu /exec
+    const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbxQiMy0jw1_MJyoCcmf0fICGbVSen4WzJLugN6U_3Ur7eQQsNvZf8RO3XJefdI-J-mu/exec'; // <-- cole seu /exec
     const REPORT_URL      = 'https://lookerstudio.google.com/embed/reporting/7a30f5e7-ced7-43b3-95ca-01048971b397/page/6JNhC';
     const REDIRECT_DELAY_MS = 200;
 
@@ -67,24 +67,15 @@
 
     const ids = ensureIds(); $('#sid').textContent = ids.sid; $('#uid').textContent = ids.uid;
 
-    // Monta e envia um POST por formulário (sem CORS)
     function postViaForm(url, payloadObj) {
       const form = document.getElementById('bridgeForm');
       form.action = url;
-      form.innerHTML = ''; // limpa campos anteriores
-
-      // estratégia 1: enviar um único campo "payload" JSON (x-www-form-urlencoded)
+      form.innerHTML = '';
       const input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'payload';
       input.value = JSON.stringify(payloadObj);
       form.appendChild(input);
-
-      // (opcional) header lógico simples via campo hidden
-      // const secret = document.createElement('input');
-      // secret.type = 'hidden'; secret.name = 'x_auth'; secret.value = 'troque-isto';
-      // form.appendChild(secret);
-
       form.submit();
     }
 
@@ -111,14 +102,8 @@
       btn.disabled = true;
       document.getElementById('err').textContent = 'Enviando...';
 
-      // Envia ao Apps Script (autenticado no domínio, sem CORS)
-      try {
-        postViaForm(APPS_SCRIPT_URL, payload);
-      } catch(e) {
-        console.error(e);
-      }
+      try { postViaForm(APPS_SCRIPT_URL, payload); } catch(e){ console.error(e); }
 
-      // Redireciona após pequeno delay (o backend processa de forma assíncrona)
       setTimeout(() => { window.location.href = REPORT_URL; }, REDIRECT_DELAY_MS);
     });
   </script>
