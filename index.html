@@ -3,138 +3,85 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pilot – rastreamento com login + GA4</title>
+  <title>Acesso ao Relatório</title>
+  <meta http-equiv="Cache-Control" content="no-store" />
   <style>
-    body{margin:0;font:14px system-ui;background:#0b0d12;color:#e7ecff;display:flex;align-items:center;justify-content:center;height:100vh}
-    header{padding:10px 12px;border-bottom:1px solid #1b2140}
-    small{opacity:.8}
-    #s{font-size:12px;opacity:.8}
-    iframe{width:100%;height:calc(100vh - 56px);border:0}
-    .hidden{display:none}
-    .login-box{background:#12182e;padding:20px;border-radius:10px;max-width:340px;width:100%;box-sizing:border-box}
-    input{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #1b2140;background:#0b0d12;color:#fff}
-    button{width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+    :root{--c-accent:#CCE4E9;--c-bg:#ECEFF1;--c-surface:#FFF;--c-text:#000;--c-text-muted:#000c;--radius:12px;--shadow:0 8px 24px rgba(0,0,0,.08);--shadow-focus:0 0 0 3px rgba(204,228,233,.65)}
+    *{box-sizing:border-box}
+    body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--c-bg);color:var(--c-text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+    .login-box{background:var(--c-surface);padding:22px 20px;border-radius:var(--radius);width:100%;max-width:380px;box-shadow:var(--shadow);border:1px solid #e5e9ec}
+    h1{margin:0 0 6px;font-size:18px}
+    h3{margin:0 0 8px;font-size:16px;letter-spacing:.2px}
+    p{margin:0 0 14px;color:var(--c-text-muted);font-size:13px}
+    label{display:block;font-size:12px;margin:10px 0 6px}
+    input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--c-accent);outline:none;transition:box-shadow .15s ease,border-color .15s ease}
+    input::placeholder{color:#0008}
+    input:focus{border-color:var(--c-accent);box-shadow:var(--shadow-focus)}
+    button{width:100%;padding:12px;background:var(--c-accent);color:var(--c-text);border:0;border-radius:10px;cursor:pointer;font-weight:700;margin-top:12px;transition:filter .12s ease,transform .02s ease}
+    button:hover{filter:brightness(.98)} button:active{transform:translateY(1px)}
+    #err{font-size:12px;color:#b00020;white-space:pre-line;min-height:16px;margin-top:8px}
+    .meta{margin-top:10px;font-size:12px;color:#0009}
   </style>
-
-  <!-- GA4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QPLM3ZCYPR"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-QPLM3ZCYPR'); // ID do seu GA4
-  </script>
 </head>
 <body>
-  <div id="login" class="login-box">
+  <div class="login-box">
+    <h1>Relatório War Room</h1>
     <h3>Identifique-se</h3>
-    <p style="font-size:13px;opacity:.8">Informe seu nome e e-mail para acessar o relatório.</p>
-    <input type="text" id="name" placeholder="Seu nome" autocomplete="name">
-    <input type="email" id="email" placeholder="voce@empresa.com" autocomplete="email">
-    <button id="enter">Acessar relatório</button>
-    <div id="err" style="color:#ffb4b4;font-size:12px;white-space:pre-line"></div>
-  </div>
+    <p>Informe seu nome e e-mail corporativo para acessar o relatório.</p>
 
-  <div id="reportArea" class="hidden" style="flex:1;flex-direction:column;width:100%">
-    <header>
-      <div><b>Demo</b> · <small>GitHub Pages ➜ Looker Studio</small></div>
-      <div id="s">status: —</div>
-    </header>
-    <iframe id="r" allowfullscreen loading="lazy"></iframe>
+    <label for="name">Seu nome</label>
+    <input type="text" id="name" placeholder="Ex.: Maria Silva" autocomplete="name" inputmode="text">
+
+    <label for="email">E-mail corporativo</label>
+    <input type="email" id="email" placeholder="voce@pmweb.com.br" autocomplete="email" inputmode="email">
+
+    <button id="enter">Acessar relatório</button>
+    <div id="err" role="status" aria-live="polite"></div>
+
+    <div class="meta">
+      <div>Session ID: <span id="sid"></span></div>
+      <div>User ID: <span id="uid"></span></div>
+      <div>Origin: <span id="orig"></span></div>
+    </div>
   </div>
 
   <script>
-  // ======= CONFIG =======
-  const REPORT_URL   = 'https://lookerstudio.google.com/embed/reporting/7a30f5e7-ced7-43b3-95ca-01048971b397/page/6JNhC';
-  const LOG_ENDPOINT = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbz1s-MzHpOGVhwGgg50Gnk_lV59_yE0f8qKNmUVrtL4ktks6nVhbHAqpcif0px_B6KnLQ/exec';
-  // ======================
+    // ===== CONFIG (edite estas 2 linhas) =====
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec'; // <-- cole o /exec
+    const REPORT_URL      = 'https://lookerstudio.google.com/embed/reporting/7a30f5e7-ced7-43b3-95ca-01048971b397/page/6JNhC';
+    // (opcional) só para debug visual:
+    const ORIGIN_HINT     = location.origin;
 
-  let sessionId, user, email, start;
-  const setStatus = t => document.getElementById('s').textContent = t;
-  const setError  = t => document.getElementById('err').textContent = t || '';
+    // ===== Helpers =====
+    const $ = s => document.querySelector(s);
+    function setErr(t){ $('#err').textContent = t || ''; }
+    function setCookie(n,v,d){ const x=new Date(); x.setTime(x.getTime()+d*864e5); document.cookie=`${n}=${encodeURIComponent(v)};expires=${x.toUTCString()};path=/;SameSite=Lax`; }
+    function getCookie(n){ const m=document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)')); return m?decodeURIComponent(m[2]):null; }
+    function uuid(){ return (crypto.randomUUID?.() || ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16))); }
+    function ensureIds(){ let sid=getCookie('sid'); if(!sid){sid=uuid(); setCookie('sid',sid,1);} let uid=getCookie('uid'); if(!uid){uid=uuid(); setCookie('uid',uid,365);} return {sid,uid}; }
+    function getUTMs(){ const q=new URLSearchParams(location.search), keys=['utm_source','utm_medium','utm_campaign','utm_content','utm_term']; const o={}; keys.forEach(k=>{ const v=q.get(k); if(v) o[k]=v; }); return o; }
+    function getBrowserMeta(){ let tz=''; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(_){} return { language:(navigator.language||navigator.userLanguage||'').trim(), timezone:tz }; }
 
-  // (Opcional) hash SHA-256 se quiser mandar hash para o GA4 no lugar do e-mail puro
-  async function sha256Hex(str) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str.trim().toLowerCase()));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-  }
+    const ids=ensureIds(); $('#sid').textContent=ids.sid; $('#uid').textContent=ids.uid; $('#orig').textContent=ORIGIN_HINT;
 
-  // Envia para Sheets e GA4
-  async function log(event, extra = {}) {
-    // envia para Apps Script (Sheets)
-    const payload = {
-      event,
-      ts: new Date().toISOString(),
-      sessionId,
-      user,
-      email,
-      pageUrl: location.href,
-      reportUrl: REPORT_URL,
-      ua: navigator.userAgent,
-      ref: document.referrer,
-      ...extra
-    };
-
-    try {
-      const res = await fetch(LOG_ENDPOINT, {
+    async function callBackend(payload){
+      // Para evitar preflight CORS, usamos text/plain (simple request)
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain; charset=UTF-8' }, // evita preflight
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+        redirect: 'follow',
+        // credenciais: não usamos cookies do Apps Script; autenticação fica a cargo do próprio Apps Script se "somente domínio"
       });
-      setStatus(res.ok ? 'status: online' : 'status: erro');
-    } catch {
-      setStatus('status: falhou');
+      if (!res.ok) {
+        const txt = await res.text().catch(()=> '');
+        throw new Error(`HTTP ${res.status} - ${txt}`);
+      }
+      return res.json();
     }
 
-    // envia para GA4
-    gtag('event', event, {
-      session_id: sessionId,
-      user_name: user,
-      // Se você quiser usar hash no GA4, envie user_id e/ou user_email como hash:
-      ...(extra.email_hash ? { user_id: extra.email_hash, user_email: extra.email_hash } : {})
-      // Se quiser e-mail puro no GA4 (vai virar (redacted)), troque por:
-      // user_id: email, user_email: email
-    });
-  }
-
-  document.getElementById('enter').onclick = async () => {
-    setError('');
-    const nameVal = document.getElementById('name').value.trim();
-    const emailVal = document.getElementById('email').value.trim();
-    if (!nameVal || !emailVal) { setError('Preencha nome e e-mail para continuar'); return; }
-
-    user = nameVal;
-    email = emailVal;
-    sessionId = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
-    start = Date.now();
-
-    // Se quiser GA4 com hash do e-mail:
-    const emailHash = await sha256Hex(emailVal);
-    gtag('config', 'G-QPLM3ZCYPR', { user_id: emailHash });
-    gtag('set', 'user_properties', { user_email: emailHash, user_name: user });
-
-    // Libera o relatório
-    document.getElementById('login').classList.add('hidden');
-    document.getElementById('reportArea').classList.remove('hidden');
-    document.getElementById('r').src = REPORT_URL;
-
-    // Eventos
-    log('page_view', { email_hash: emailHash });
-    window.addEventListener('beforeunload', () => {
-      const durationSec = Math.round((Date.now() - start) / 1000);
-      const unloadData = { event:'page_unload', sessionId, user, email, email_hash: emailHash, pageUrl: location.href, reportUrl: REPORT_URL, durationSec };
-      navigator.sendBeacon(LOG_ENDPOINT, new Blob([JSON.stringify(unloadData)], { type: 'text/plain' }));
-      gtag('event', 'page_unload', unloadData);
-    });
-    setInterval(() => {
-      log('heartbeat', { aliveFor: Math.round((Date.now() - start) / 1000), email_hash: emailHash });
-    }, 15000);
-  };
-  </script>
-
-  <!-- Dicas GA4:
-     - Crie dimensão personalizada (Event) para 'user_email' ou 'user_email_hash' se usar como parâmetro de evento.
-     - Como o código acima usa hash, use 'user_id' = hash e 'user_email' (user_property) = hash.
-  -->
-</body>
-</html>
+    document.getElementById('enter').addEventListener('click', async () => {
+      try{
+        setErr('');
+        const name  = docume
