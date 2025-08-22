@@ -4,13 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Acesso ao Relatório</title>
-  <meta http-equiv="Cache-Control" content="no-store" />
   <style>
     :root{--c-accent:#CCE4E9;--c-bg:#ECEFF1;--c-surface:#FFF;--c-text:#000;--c-text-muted:#000c;--radius:12px;--shadow:0 8px 24px rgba(0,0,0,.08);--shadow-focus:0 0 0 3px rgba(204,228,233,.65)}
     *{box-sizing:border-box}
     body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--c-bg);color:var(--c-text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
-    .login-box{background:var(--c-surface);padding:22px 20px;border-radius:var(--radius);width:100%;max-width:380px;box-shadow:var(--shadow);border:1px solid #e5e9ec}
-    h1{margin:0 0 6px;font-size:18px}
+    .login-box{background:var(--c-surface);padding:22px 20px;border-radius:var(--radius);width:100%;max-width:420px;box-shadow:var(--shadow);border:1px solid #e5e9ec}
+    h1{margin:0 0 6px;font-size:20px}
     h3{margin:0 0 8px;font-size:16px;letter-spacing:.2px}
     p{margin:0 0 14px;color:var(--c-text-muted);font-size:13px}
     label{display:block;font-size:12px;margin:10px 0 6px}
@@ -41,18 +40,22 @@
     <div class="meta">
       <div>Session ID: <span id="sid"></span></div>
       <div>User ID: <span id="uid"></span></div>
-      <div>Origin: <span id="orig"></span></div>
     </div>
   </div>
 
-  <script>
-    // ===== CONFIG (edite estas 2 linhas) =====
-    const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbzvpjFsZ19ZPwq2K3T8h_wl1cC9sREsbvdf4PaoL8dJoH-HR-9LO849v9PDpqLQMy-q/exec'; // <-- cole o /exec
-    const REPORT_URL      = 'https://lookerstudio.google.com/embed/reporting/7a30f5e7-ced7-43b3-95ca-01048971b397/page/6JNhC';
-    // (opcional) só para debug visual:
-    const ORIGIN_HINT     = location.origin;
+  <!-- iframe oculto recebe a resposta do Apps Script (não precisamos ler) -->
+  <iframe name="hidden_iframe" id="hidden_iframe" style="display:none"></iframe>
 
-    // ===== Helpers =====
+  <!-- form oculto para POST cross-origin sem CORS -->
+  <form id="bridgeForm" method="POST" target="hidden_iframe" style="display:none"></form>
+
+  <script>
+    // ===== CONFIG =====
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec'; // cole seu /exec
+    const REPORT_URL      = 'https://lookerstudio.google.com/embed/reporting/7a30f5e7-ced7-43b3-95ca-01048971b397/page/6JNhC';
+    const REDIRECT_DELAY_MS = 200;
+
+    // ===== helpers =====
     const $ = s => document.querySelector(s);
     function setErr(t){ $('#err').textContent = t || ''; }
     function setCookie(n,v,d){ const x=new Date(); x.setTime(x.getTime()+d*864e5); document.cookie=`${n}=${encodeURIComponent(v)};expires=${x.toUTCString()};path=/;SameSite=Lax`; }
@@ -62,26 +65,62 @@
     function getUTMs(){ const q=new URLSearchParams(location.search), keys=['utm_source','utm_medium','utm_campaign','utm_content','utm_term']; const o={}; keys.forEach(k=>{ const v=q.get(k); if(v) o[k]=v; }); return o; }
     function getBrowserMeta(){ let tz=''; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(_){} return { language:(navigator.language||navigator.userLanguage||'').trim(), timezone:tz }; }
 
-    const ids=ensureIds(); $('#sid').textContent=ids.sid; $('#uid').textContent=ids.uid; $('#orig').textContent=ORIGIN_HINT;
+    const ids = ensureIds(); $('#sid').textContent = ids.sid; $('#uid').textContent = ids.uid;
 
-    async function callBackend(payload){
-      // Para evitar preflight CORS, usamos text/plain (simple request)
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload),
-        cache: 'no-store',
-        redirect: 'follow',
-        // credenciais: não usamos cookies do Apps Script; autenticação fica a cargo do próprio Apps Script se "somente domínio"
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(()=> '');
-        throw new Error(`HTTP ${res.status} - ${txt}`);
-      }
-      return res.json();
+    // Monta e envia um POST por formulário (sem CORS)
+    function postViaForm(url, payloadObj) {
+      const form = document.getElementById('bridgeForm');
+      form.action = url;
+      form.innerHTML = ''; // limpa campos anteriores
+
+      // estratégia 1: enviar um único campo "payload" JSON (x-www-form-urlencoded)
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = JSON.stringify(payloadObj);
+      form.appendChild(input);
+
+      // (opcional) header lógico simples via campo hidden
+      // const secret = document.createElement('input');
+      // secret.type = 'hidden'; secret.name = 'x_auth'; secret.value = 'troque-isto';
+      // form.appendChild(secret);
+
+      form.submit();
     }
 
-    document.getElementById('enter').addEventListener('click', async () => {
-      try{
-        setErr('');
-        const name  = docume
+    document.getElementById('enter').addEventListener('click', () => {
+      setErr('');
+      const name  = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      if (!name || !email) { setErr('Preencha nome e e-mail para continuar.'); return; }
+      if (!/@pmweb\.com\.br$/i.test(email)) { setErr('Use seu e-mail corporativo @pmweb.com.br.'); return; }
+
+      const payload = {
+        name, email,
+        page_url: location.href,
+        report_url: REPORT_URL,
+        session_id: ids.sid,
+        user_id: ids.uid,
+        user_agent: navigator.userAgent,
+        referrer: document.referrer || '',
+        ...getUTMs(),
+        ...getBrowserMeta()
+      };
+
+      const btn = document.getElementById('enter');
+      btn.disabled = true;
+      document.getElementById('err').textContent = 'Enviando...';
+
+      // Envia ao Apps Script (autenticado no domínio, sem CORS)
+      try {
+        postViaForm(APPS_SCRIPT_URL, payload);
+      } catch(e) {
+        console.error(e);
+      }
+
+      // Redireciona após pequeno delay (o backend processa de forma assíncrona)
+      setTimeout(() => { window.location.href = REPORT_URL; }, REDIRECT_DELAY_MS);
+    });
+  </script>
+</body>
+</html>
