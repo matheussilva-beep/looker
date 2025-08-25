@@ -5,32 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Acesso ao Relatório</title>
   <style>
-    :root{--c-accent:#CCE4E9;--c-bg:#ECEFF1;--c-surface:#FFF;--c-text:#000;--c-text-muted:#000c;--radius:12px;--shadow:0 8px 24px rgba(0,0,0,.08);--shadow-focus:0 0 0 3px rgba(204,228,233,.65)}
-    *{box-sizing:border-box}
-    body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--c-bg);color:var(--c-text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
-    .login-box{background:var(--c-surface);padding:22px 20px;border-radius:var(--radius);width:100%;max-width:420px;box-shadow:var(--shadow);border:1px solid #e5e9ec}
-    h1{margin:0 0 6px;font-size:20px}
-    h3{margin:0 0 8px;font-size:16px;letter-spacing:.2px}
-    p{margin:0 0 14px;color:var(--c-text-muted);font-size:13px}
-    label{display:block;font-size:12px;margin:10px 0 6px}
-    input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--c-accent);outline:none;transition:box-shadow .15s ease,border-color .15s ease}
-    input::placeholder{color:#0008}
-    input:focus{border-color:var(--c-accent);box-shadow:var(--shadow-focus)}
-    button{width:100%;padding:12px;background:var(--c-accent);color:var(--c-text);border:0;border-radius:10px;cursor:pointer;font-weight:700;margin-top:12px;transition:filter .12s ease,transform .02s ease}
-    button:hover{filter:brightness(.98)} button:active{transform:translateY(1px)}
-    #err{font-size:12px;color:#b00020;white-space:pre-line;min-height:16px;margin-top:8px}
-    .meta{margin-top:10px;font-size:12px;color:#0009}
+    :root {
+      --c-accent:#CCE4E9;
+      --c-bg:#ECEFF1;
+      --c-surface:#FFF;
+      --c-text:#000;
+      --c-text-muted:#000c;
+      --radius:12px;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --shadow-focus:0 0 0 3px rgba(204,228,233,.65);
+    }
+    * { box-sizing:border-box }
+    body {
+      margin:0;
+      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--c-bg);
+      color:var(--c-text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      padding:24px;
+    }
+    .login-box {
+      background:var(--c-surface);
+      padding:22px 20px;
+      border-radius:var(--radius);
+      width:100%;
+      max-width:420px;
+      box-shadow:var(--shadow);
+      border:1px solid #e5e9ec;
+      text-align:center; /* centraliza conteúdo interno */
+    }
+    h1 { margin:0 0 6px; font-size:20px }
+    h3 { margin:0 0 8px; font-size:16px; letter-spacing:.2px }
+    p { margin:0 0 14px; color:var(--c-text-muted); font-size:13px }
+    label { display:block; font-size:12px; margin:10px 0 6px; text-align:left }
+    input {
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid var(--c-accent);
+      outline:none;
+      transition: box-shadow .15s ease,border-color .15s ease;
+    }
+    input::placeholder { color:#0008 }
+    input:focus { border-color:var(--c-accent); box-shadow:var(--shadow-focus) }
+    button {
+      width:100%;
+      padding:12px;
+      background:var(--c-accent);
+      color:var(--c-text);
+      border:0;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      margin-top:12px;
+      transition:filter .12s ease,transform .02s ease;
+    }
+    button:hover { filter:brightness(.98) }
+    button:active { transform:translateY(1px) }
+    #err { font-size:12px; color:#b00020; white-space:pre-line; min-height:16px; margin-top:8px }
+    .meta { margin-top:10px; font-size:12px; color:#0009 }
 
-    .login-box h1 {
-    text-align: center;
-
+    /* estilo da logo */
     .logo {
-  display: block;
-  margin: 0 auto 12px; /* centraliza e dá espaçamento embaixo */
-  max-width: 160px;   /* ajusta o tamanho da logo */
-  height: auto;
-}
-
+      display:block;
+      margin:0 auto 12px;
+      max-width:100px; /* 60% menor que ~160px anterior */
+      height:auto;
+    }
   </style>
 </head>
 <body>
@@ -55,148 +99,17 @@
     </div>
   </div>
 
-  <!-- iframe oculto para receber a resposta do Apps Script -->
+  <!-- iframe oculto -->
   <iframe name="hidden_iframe" id="hidden_iframe" style="display:none"></iframe>
-
-  <!-- form oculto para POST cross-origin sem CORS -->
   <form id="bridgeForm" method="POST" target="hidden_iframe" style="display:none"></form>
 
   <script>
-    <script>
-  // ===== CONFIG =====
-  const APPS_SCRIPT_URL   = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbxQiMy0jw1_MJyoCcmf0fICGbVSen4WzJLugN6U_3Ur7eQQsNvZf8RO3XJefdI-J-mu/exec';
-  const REPORT_URL        = 'https://matheussilva-beep.github.io/report/';
-  const REDIRECT_DELAY_MS = 200;
+    // ===== CONFIG =====
+    const APPS_SCRIPT_URL   = 'https://script.google.com/a/macros/pmweb.com.br/s/AKfycbxQiMy0jw1_MJyoCcmf0fICGbVSen4WzJLugN6U_3Ur7eQQsNvZf8RO3XJefdI-J-mu/exec';
+    const REPORT_URL        = 'https://matheussilva-beep.github.io/report/';
+    const REDIRECT_DELAY_MS = 200;
 
-  // ===== REGRAS DO LOGIN (ajuste aqui) =====
-  const GATE_COOKIE_NAME   = 'gate';   // token simples p/ indicar "logado"
-  const GATE_COOKIE_DAYS   = 7;        // login persiste até X dias (desde o último login)
-  const MAX_IDLE_MIN       = 30;       // relogar se ficar inativo por X minutos
-  const MAX_ABSOLUTE_HOURS = 8;        // relogar após Y horas (tempo total de sessão)
-
-  // ===== helpers =====
-  const $ = s => document.querySelector(s);
-  function setErr(t){ $('#err').textContent = t || ''; }
-  function setCookie(n,v,d){ const x=new Date(); x.setTime(x.getTime()+d*864e5); document.cookie=`${n}=${encodeURIComponent(v)};expires=${x.toUTCString()};path=/;SameSite=Lax`; }
-  function getCookie(n){ const m=document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)')); return m?decodeURIComponent(m[2]):null; }
-  function delCookie(n){ document.cookie = `${n}=; Max-Age=0; path=/; SameSite=Lax`; }
-  function uuid(){ return (crypto.randomUUID?.() || ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16))); }
-  function ensureIds(){ let sid=getCookie('sid'); if(!sid){sid=uuid(); setCookie('sid',sid,1);} let uid=getCookie('uid'); if(!uid){uid=uuid(); setCookie('uid',uid,365);} return {sid,uid}; }
-  function getUTMs(){ const q=new URLSearchParams(location.search), ks=['utm_source','utm_medium','utm_campaign','utm_content','utm_term']; const o={}; ks.forEach(k=>{ const v=q.get(k); if(v) o[k]=v; }); return o; }
-  function getBrowserMeta(){ let tz=''; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(_){} return { language:(navigator.language||navigator.userLanguage||'').trim(), timezone:tz }; }
-
-  // ===== controle simples de sessão (gate) =====
-  const GATE_KEYS = {
-    loginAt:  'gate_login_at',   // epoch ms
-    lastSeen: 'gate_last_seen'   // epoch ms
-  };
-
-  function now(){ return Date.now(); }
-  function minutes(ms){ return ms/60000; }
-  function hours(ms){ return ms/3600000; }
-
-  function gateIsValid(){
-    const token = getCookie(GATE_COOKIE_NAME);
-    if (!token) return false;
-
-    const loginAt  = Number(localStorage.getItem(GATE_KEYS.loginAt) || 0);
-    const lastSeen = Number(localStorage.getItem(GATE_KEYS.lastSeen) || 0);
-    const t = now();
-
-    if (!loginAt || !lastSeen) return false;
-    if (hours(t - loginAt)  > MAX_ABSOLUTE_HOURS) return false;
-    if (minutes(t - lastSeen) > MAX_IDLE_MIN)     return false;
-
-    return true;
-  }
-
-  function touchActivity(){
-    localStorage.setItem(GATE_KEYS.lastSeen, String(now()));
-  }
-
-  function establishGate(){
-    // token aleatório, sem PII
-    setCookie(GATE_COOKIE_NAME, uuid(), GATE_COOKIE_DAYS);
-    const t = now();
-    localStorage.setItem(GATE_KEYS.loginAt,  String(t));
-    localStorage.setItem(GATE_KEYS.lastSeen, String(t));
-  }
-
-  function clearGate(){
-    delCookie(GATE_COOKIE_NAME);
-    localStorage.removeItem(GATE_KEYS.loginAt);
-    localStorage.removeItem(GATE_KEYS.lastSeen);
-  }
-
-  // Atualiza "atividade" quando o usuário interage com a página
-  ['click','keydown','mousemove','touchstart','visibilitychange'].forEach(evt=>{
-    document.addEventListener(evt, () => {
-      if (document.visibilityState === 'hidden') return;
-      touchActivity();
-    }, {passive:true});
-  });
-
-  // ===== boot visual e ids =====
-  const ids = ensureIds();
-  $('#sid') && ($('#sid').textContent = ids.sid);
-  $('#uid') && ($('#uid').textContent = ids.uid);
-
-  // Se já está "logado" e a sessão é válida, pode pular o formulário:
-  (function maybeSkipForm(){
-    if (gateIsValid()) {
-      // opcional: se quiser pular direto, descomente:
-      // window.location.href = REPORT_URL;
-      // return;
-    }
-  })();
-
-  // ===== ponte de POST cross-origin (igual ao seu) =====
-  function postViaForm(url, payloadObj) {
-    const form = document.getElementById('bridgeForm');
-    form.action = url;
-    form.innerHTML = '';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(payloadObj);
-    form.appendChild(input);
-    form.submit();
-  }
-
-  document.getElementById('enter').addEventListener('click', () => {
-    setErr('');
-    const name  = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    if (!name || !email) { setErr('Preencha nome e e-mail para continuar.'); return; }
-    if (!/@pmweb\.com\.br$/i.test(email)) { setErr('Use seu e-mail corporativo @pmweb.com.br.'); return; }
-
-    const payload = {
-      name, email,
-      page_url: location.href,
-      report_url: REPORT_URL,
-      session_id: ids.sid,
-      user_id: ids.uid,
-      user_agent: navigator.userAgent,
-      referrer: document.referrer || '',
-      ...getUTMs(),
-      ...getBrowserMeta()
-    };
-
-    const btn = document.getElementById('enter');
-    btn.disabled = true;
-    document.getElementById('err').textContent = 'Enviando...';
-
-    try { postViaForm(APPS_SCRIPT_URL, payload); } catch(e){ console.error(e); }
-
-    // marca como logado
-    establishGate();
-
-    setTimeout(() => { window.location.href = REPORT_URL; }, REDIRECT_DELAY_MS);
-  });
-</script>
-
-
-    // ===== helpers =====
+    // helpers
     const $ = s => document.querySelector(s);
     function setErr(t){ $('#err').textContent = t || ''; }
     function setCookie(n,v,d){ const x=new Date(); x.setTime(x.getTime()+d*864e5); document.cookie=`${n}=${encodeURIComponent(v)};expires=${x.toUTCString()};path=/;SameSite=Lax`; }
